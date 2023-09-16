@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPORTING DE CASTELLó</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(circle, #ff0000, #0000ff);
+            font-family: Arial, sans-serif;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        h1 {
+            font-size: 36px;
+            color: black;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 24px;
+            color: white;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        form {
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        table {
+            width: 80%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+        }
+
+        table, th, td {
+            border: 1px solid black;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            color: black;
+        }
+
+        .botones {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <img src="https://sportingdecastellocom.files.wordpress.com/2022/09/cropped-captura-de-pantalla-2022-08-07-a-las-19.46.30.png?w=300" alt="Escudo Sporting">
+    <h1>SPORTING DE CASTELLó</h1>
+    <h2>Registro asistencia a reuniones y formaciones</h2>
+
+    <form id="registroForm">
+        <label for="nombreApellido">Nombre y Apellidos:</label>
+        <input type="text" id="nombreApellido" required><br><br>
+        
+        <label for="equipo">Equipo:</label>
+        <input type="text" id="equipo" required><br><br>
+        
+        <input type="submit" value="Registrar">
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre y Apellidos</th>
+                <th>Equipo</th>
+                <th>Fecha</th>
+                <th>Hora de registro</th>
+            </tr>
+        </thead>
+        <tbody id="registroTableBody">
+            <!-- Los registros se agregarán aquí dinámicamente -->
+        </tbody>
+    </table>
+
+    <div class="botones">
+        <button id="limpiarBtn">Limpiar</button>
+        <button id="exportarCSVBtn">Exportar a CSV</button>
+        <input type="text" id="nombreArchivoCSV" placeholder="Nombre del archivo CSV" value="">
+    </div>
+
+    <script>
+        const formulario = document.getElementById("registroForm");
+        const tabla = document.getElementById("registroTableBody");
+        const limpiarBtn = document.getElementById("limpiarBtn");
+        const exportarCSVBtn = document.getElementById("exportarCSVBtn");
+        const nombreArchivoCSVInput = document.getElementById("nombreArchivoCSV");
+        let registros = JSON.parse(localStorage.getItem("registros")) || [];
+
+        // Cargar registros previos
+        cargarRegistros();
+
+        formulario.addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            const nombreApellido = document.getElementById("nombreApellido").value;
+            const equipo = document.getElementById("equipo").value;
+            const fecha = new Date().toLocaleDateString();
+            const hora = new Date().toLocaleTimeString();
+
+            const registro = { NombreApellido: nombreApellido, Equipo: equipo, Fecha: fecha, Hora: hora };
+            registros.push(registro);
+
+            const fila = document.createElement("tr");
+            fila.innerHTML = `
+                <td>${nombreApellido}</td>
+                <td>${equipo}</td>
+                <td>${fecha}</td>
+                <td>${hora}</td>
+            `;
+
+            tabla.appendChild(fila);
+
+            // Limpiar los campos del formulario
+            document.getElementById("nombreApellido").value = "";
+            document.getElementById("equipo").value = "";
+
+            // Guardar registros en localStorage
+            guardarRegistros();
+        });
+
+        limpiarBtn.addEventListener("click", function () {
+            registros = []; // Limpiar la matriz de registros
+            tabla.innerHTML = ""; // Limpiar la tabla
+
+            // Limpiar registros en localStorage
+            localStorage.removeItem("registros");
+        });
+
+        exportarCSVBtn.addEventListener("click", function () {
+            const nombreArchivoCSV = nombreArchivoCSVInput.value || "registros.csv";
+            const csv = convertirAFormatoCSV(registros);
+            descargarCSV(csv, nombreArchivoCSV);
+        });
+
+        function convertirAFormatoCSV(registros) {
+            const encabezados = ["Nombre y Apellidos", "Equipo", "Fecha", "Hora de registro"];
+            const filas = registros.map(registro => [registro.NombreApellido, registro.Equipo, registro.Fecha, registro.Hora]);
+            const contenidoCSV = [encabezados, ...filas].map(fila => fila.join(",")).join("\n");
+            return contenidoCSV;
+        }
+
+        function descargarCSV(csv, filename) {
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            if (navigator.msSaveBlob) {
+                navigator.msSaveBlob(blob, filename);
+            } else {
+                const enlace = document.createElement("a");
+                if (enlace.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    enlace.setAttribute("href", url);
+                    enlace.setAttribute("download", filename);
+                    enlace.style.visibility = "hidden";
+                    document.body.appendChild(enlace);
+                    enlace.click();
+                    document.body.removeChild(enlace);
+                }
+            }
+        }
+
+        function guardarRegistros() {
+            localStorage.setItem("registros", JSON.stringify(registros));
+        }
+
+        function cargarRegistros() {
+            registros.forEach(registro => {
+                const fila = document.createElement("tr");
+                fila.innerHTML = `
+                    <td>${registro.NombreApellido}</td>
+                    <td>${registro.Equipo}</td>
+                    <td>${registro.Fecha}</td>
+                    <td>${registro.Hora}</td>
+                `;
+                tabla.appendChild(fila);
+            });
+        }
+    </script>
+</body>
+</html>
